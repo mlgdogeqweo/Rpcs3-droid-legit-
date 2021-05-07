@@ -858,25 +858,9 @@ int main(int argc, char** argv)
 	{
 		sys_log.notice("Booting application from command line: %s", args.at(0).toStdString());
 
-		// Propagate command line arguments
-		std::vector<std::string> rpcs3_argv;
-
-		if (args.length() > 1)
-		{
-			rpcs3_argv.emplace_back();
-
-			for (int i = 1; i < args.length(); i++)
-			{
-				const std::string arg = args[i].toStdString();
-				rpcs3_argv.emplace_back(arg);
-				sys_log.notice("Optional command line argument %d: %s", i, arg);
-			}
-		}
-
 		// Postpone startup to main event loop
-		Emu.CallAfter([path = sstr(QFileInfo(args.at(0)).absoluteFilePath()), rpcs3_argv = std::move(rpcs3_argv)]() mutable
+		Emu.CallAfter([path = sstr(QFileInfo(args.at(0)).absoluteFilePath())]() mutable
 		{
-			Emu.argv = std::move(rpcs3_argv);
 			Emu.SetForceBoot(true);
 
 			if (const game_boot_result error = Emu.BootGame(path, ""); error != game_boot_result::no_errors)

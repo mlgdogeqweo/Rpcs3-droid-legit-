@@ -1165,10 +1165,7 @@ game_boot_result Emulator::Load(const std::string& title_id, bool add_only, bool
 			if (argv.empty())
 			{
 				argv.resize(1);
-			}
 
-			if (argv[0].empty())
-			{
 				auto unescape = [](std::string_view path)
 				{
 					// Unescape from host FS
@@ -1221,6 +1218,10 @@ game_boot_result Emulator::Load(const std::string& title_id, bool add_only, bool
 				}
 
 				sys_log.notice("Elf path: %s", argv[0]);
+
+				// Append CLI arguments from config
+				const auto& cfg_argv = g_cfg.core.cli_args.get_vec();
+				argv.insert(argv.end(), cfg_argv.begin(), cfg_argv.end());
 			}
 
 			if (!argv[0].starts_with("/dev_hdd0/game"sv) && m_cat == "HG"sv)
