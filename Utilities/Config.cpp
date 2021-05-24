@@ -230,10 +230,11 @@ void cfg::encode(YAML::Emitter& out, const cfg::_base& rhs)
 		out << YAML::EndMap;
 		return;
 	}
+	case type::vector:
 	case type::set:
 	{
 		out << YAML::BeginSeq;
-		for (const auto& str : static_cast<const set_entry&>(rhs).get_set())
+		for (const auto& str : rhs.to_list())
 		{
 			out << str;
 		}
@@ -294,6 +295,7 @@ void cfg::decode(const YAML::Node& data, cfg::_base& rhs, bool dynamic)
 
 		break;
 	}
+	case type::vector:
 	case type::set:
 	{
 		std::vector<std::string> values;
@@ -380,6 +382,11 @@ void cfg::_bool::from_default()
 void cfg::string::from_default()
 {
 	m_value = def;
+}
+
+void cfg::vec_entry::from_default()
+{
+	m_vec = {};
 }
 
 void cfg::set_entry::from_default()

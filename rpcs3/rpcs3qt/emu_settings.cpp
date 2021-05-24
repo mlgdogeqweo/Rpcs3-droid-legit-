@@ -680,7 +680,7 @@ void emu_settings::EnhanceDoubleSpinBox(QDoubleSpinBox* spinbox, emu_settings_ty
 	});
 }
 
-void emu_settings::EnhanceLineEdit(QLineEdit* edit, emu_settings_type type)
+void emu_settings::EnhanceLineEdit(QLineEdit* edit, emu_settings_type type, bool as_vector, const QRegularExpression& split_regex)
 {
 	if (!edit)
 	{
@@ -688,13 +688,37 @@ void emu_settings::EnhanceLineEdit(QLineEdit* edit, emu_settings_type type)
 		return;
 	}
 
-	const std::string set_text = GetSetting(type);
-	edit->setText(qstr(set_text));
-
-	connect(edit, &QLineEdit::textChanged, [type, this](const QString &text)
+	if (as_vector)
 	{
-		SetSetting(type, sstr(text));
-	});
+		std::string text;
+		for (const std::string& elem : GetSettingAsVector(emu_settings_type::CommandLineArguments))
+		{
+			if (!text.empty())
+				text += " ";
+			text += elem;
+		}
+		edit->setText(qstr(text));
+
+		connect(edit, &QLineEdit::textChanged, [type, split_regex, this](const QString& text)
+		{
+			std::vector<std::string> vec;
+			for (const QString& elem : text.split(split_regex))
+			{
+				vec.emplace_back(sstr(elem));
+			}
+			SetSetting(type, vec);
+		});
+	}
+	else
+	{
+		const std::string set_text = GetSetting(type);
+		edit->setText(qstr(set_text));
+
+		connect(edit, &QLineEdit::textChanged, [type, this](const QString& text)
+		{
+			SetSetting(type, sstr(text));
+		});
+	}
 }
 
 void emu_settings::EnhanceRadioButton(QButtonGroup* button_group, emu_settings_type type)
@@ -752,14 +776,15 @@ void emu_settings::EnhanceRadioButton(QButtonGroup* button_group, emu_settings_t
 	}
 }
 
-std::vector<std::string> emu_settings::GetLibrariesControl()
+std::vector<std::string> emu_settings::GetSettingAsVector(emu_settings_type type)
 {
-	return m_current_settings["Core"]["Libraries Control"].as<std::vector<std::string>, std::initializer_list<std::string>>({});
-}
+	if (const auto node = cfg_adapter::get_node(m_current_settings, settings_location[type]); node && node.IsSequence())
+	{
+		return node.as<std::vector<std::string>, std::initializer_list<std::string>>({});
+	}
 
-void emu_settings::SaveSelectedLibraries(const std::vector<std::string>& libs)
-{
-	m_current_settings["Core"]["Libraries Control"] = libs;
+	cfg_log.fatal("GetSettingAsVector(type=%d) could not retrieve the requested node", static_cast<int>(type));
+	return {};
 }
 
 QStringList emu_settings::GetSettingOptions(emu_settings_type type)
@@ -790,6 +815,11 @@ std::string emu_settings::GetSetting(emu_settings_type type) const
 }
 
 void emu_settings::SetSetting(emu_settings_type type, const std::string& val) const
+{
+	cfg_adapter::get_node(m_current_settings, settings_location[type]) = val;
+}
+
+void emu_settings::SetSetting(emu_settings_type type, const std::vector<std::string>& val) const
 {
 	cfg_adapter::get_node(m_current_settings, settings_location[type]) = val;
 }

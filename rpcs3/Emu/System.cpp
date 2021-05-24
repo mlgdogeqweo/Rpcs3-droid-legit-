@@ -1165,10 +1165,7 @@ game_boot_result Emulator::Load(const std::string& title_id, bool add_only, bool
 			if (argv.empty())
 			{
 				argv.resize(1);
-			}
 
-			if (argv[0].empty())
-			{
 				auto unescape = [](std::string_view path)
 				{
 					// Unescape from host FS
@@ -1221,6 +1218,53 @@ game_boot_result Emulator::Load(const std::string& title_id, bool add_only, bool
 				}
 
 				sys_log.notice("Elf path: %s", argv[0]);
+
+				// Append CLI arguments from config
+				const std::string cfg_argv = g_cfg.core.cli_args.to_string();
+
+				for (usz i = 0, append = 0, search_space = 1; i < cfg_argv.size();)
+				{
+					const usz pos = cfg_argv.find_first_of(search_space ? " \"\\"sv : "\"\\"sv, i);
+
+					if (pos >= cfg_argv.size())
+					{
+						if (!append)
+						{
+							argv.emplace_back();
+						}
+
+						const std::string_view part = std::string_view(cfg_argv).substr(i, pos - i);
+						if (!part.empty()) argv.back().insert(argv.back().end(), part.begin(), part.end());
+						break;
+					}
+
+					switch (cfg_argv[pos])
+					{
+					case '\\':
+					{
+						if (append++ == 0)
+						{
+							argv.emplace_back();
+						}
+						break;
+					}
+					case '\"':
+					{
+						if (!std::exchange(append, 0))
+						{
+							argv.emplace_back();
+						}
+
+						search_space ^= 1;
+						break;
+					}
+					case ' ': break;
+					default: ensure(0);
+					}
+
+					if (pos > i) argv.back().insert(argv.back().end(), cfg_argv.begin() + i, pos - i);
+					i = (cfg_argv[pos] == ' ' ? cfg_argv.find_first_not_of(' ', pos) : pos + 1);
+				}
 			}
 
 			if (!argv[0].starts_with("/dev_hdd0/game"sv) && m_cat == "HG"sv)

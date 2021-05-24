@@ -41,6 +41,7 @@ namespace cfg
 		_int, // cfg::_int type
 		uint, // cfg::uint type
 		string, // cfg::string type
+		vector, // cfg::vec_entry type
 		set, // cfg::set_entry type
 		log,
 	};
@@ -438,6 +439,37 @@ namespace cfg
 		bool from_string(const std::string& value, bool /*dynamic*/ = false) override
 		{
 			m_value = value;
+			return true;
+		}
+	};
+
+	// Simple vector entry (TODO: template for various types)
+	class vec_entry final : public _base
+	{
+		std::vector<std::string> m_vec{};
+
+	public:
+		// Default value is empty list in current implementation
+		vec_entry(node* owner, const std::string& name)
+			: _base(type::vector, owner, name, false)
+		{
+		}
+
+		void from_default() override;
+
+		const std::vector<std::string>& get_vec() const
+		{
+			return m_vec;
+		}
+
+		std::vector<std::string> to_list() const override
+		{
+			return m_vec;
+		}
+
+		bool from_list(std::vector<std::string>&& list) override
+		{
+			m_vec = std::move(list);
 			return true;
 		}
 	};
