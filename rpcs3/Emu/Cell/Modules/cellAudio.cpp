@@ -613,9 +613,10 @@ void cell_audio_thread::advance(u64 timestamp)
 
 	lock.unlock();
 
+	lv2_obj::notify_all_t notify;
+
 	for (u32 i = 0; i < queue_count; i++)
 	{
-		lv2_obj::notify_all_t notify;
 		queues[i]->send(event_sources[i], CELL_AUDIO_EVENT_MIX, 0, event_data3[i]);
 	}
 }
@@ -777,7 +778,7 @@ void cell_audio_thread::operator()()
 			const s64 audio_period_alignment_delta = (timestamp - m_start_time) % cfg.audio_block_period;
 			if (audio_period_alignment_delta > cfg.period_comparison_margin)
 			{
-				thread_ctrl::wait_for(audio_period_alignment_delta - cfg.period_comparison_margin);
+				thread_ctrl::wait_for_accurate(audio_period_alignment_delta - cfg.period_comparison_margin, false);
 			}
 
 			if (cfg.buffering_enabled)
@@ -831,7 +832,7 @@ void cell_audio_thread::operator()()
 
 			if (time_left > cfg.period_comparison_margin)
 			{
-				thread_ctrl::wait_for(get_thread_wait_delay(time_left));
+				thread_ctrl::wait_for_accurate(get_thread_wait_delay(time_left), false);
 				continue;
 			}
 		}
@@ -904,7 +905,7 @@ void cell_audio_thread::operator()()
 			const s64 time_left = m_dynamic_period - time_since_last_period;
 			if (time_left > cfg.period_comparison_margin)
 			{
-				thread_ctrl::wait_for(get_thread_wait_delay(time_left));
+				thread_ctrl::wait_for_accurate(get_thread_wait_delay(time_left), false);
 				continue;
 			}
 
