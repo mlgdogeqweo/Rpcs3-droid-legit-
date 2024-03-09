@@ -35,7 +35,7 @@ breakpoint_list::breakpoint_list(QWidget* parent, breakpoint_handler* handler) :
 	addAction(m_delete_action);
 
 	// Hide until used in order to allow as much space for registers panel as possible
-	hide();
+	// hide();
 }
 
 /**
@@ -57,7 +57,7 @@ void breakpoint_list::ClearBreakpoints()
 		delete currentItem;
 	}
 
-	hide();
+	// hide();
 }
 
 void breakpoint_list::RemoveBreakpoint(u32 addr)
@@ -75,10 +75,10 @@ void breakpoint_list::RemoveBreakpoint(u32 addr)
 		}
 	}
 
-	if (!count())
-	{
-		hide();
-	}
+	// if (!count())
+	// {
+	// 	hide();
+	// }
 }
 
 bool breakpoint_list::AddBreakpoint(u32 pc, bs_t<breakpoint_types> type)
